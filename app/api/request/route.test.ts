@@ -23,6 +23,11 @@ describe("POST /api/request", () => {
     delete process.env.POS_WEBHOOK_URL;
     delete process.env.POS_WEBHOOK_SECRET;
     delete process.env.POS_INTEGRATION_REQUIRED;
+    delete process.env.TOAST_BRIDGE_WEBHOOK_URL;
+    delete process.env.TOAST_BRIDGE_SECRET;
+    delete process.env.TOAST_INTEGRATION_REQUIRED;
+    delete process.env.TOAST_RESTAURANT_EXTERNAL_ID;
+    delete process.env.TOAST_LOCATION_NAME;
   });
 
   it("forwards a valid request to Discord", async () => {
@@ -41,7 +46,10 @@ describe("POST /api/request", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
       success: true,
-      deliveries: [{ channel: "discord", delivered: true, required: true }],
+      deliveries: [
+        { channel: "mock-pos", delivered: true, required: false },
+        { channel: "discord", delivered: true, required: true },
+      ],
     });
     expect(fetchMock).toHaveBeenCalledOnce();
 
@@ -108,6 +116,7 @@ describe("POST /api/request", () => {
     expect(await response.json()).toEqual({
       success: true,
       deliveries: [
+        { channel: "mock-pos", delivered: true, required: false },
         { channel: "discord", delivered: true, required: true },
         { channel: "pos-webhook", delivered: true, required: false },
       ],
@@ -129,5 +138,55 @@ describe("POST /api/request", () => {
       customMessage: "",
     });
     expect(posBody.requestedAt).toEqual(expect.any(String));
+  });
+
+  it("also forwards to a Toast bridge when configured", async () => {
+    process.env.TOAST_BRIDGE_WEBHOOK_URL =
+      "https://toast-bridge.example.com/tabletap";
+    process.env.TOAST_BRIDGE_SECRET = "toast-secret";
+    process.env.TOAST_RESTAURANT_EXTERNAL_ID =
+      "00000000-0000-0000-0000-000000000001";
+    process.env.TOAST_LOCATION_NAME = "Downtown";
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(null, { status: 204 }));
+
+    const response = await POST(
+      createRequest({
+        tableId: "bar-4",
+        requestType: "Check Please",
+        customMessage: "",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      success: true,
+      deliveries: [
+        { channel: "mock-pos", delivered: true, required: false },
+        { channel: "discord", delivered: true, required: true },
+        { channel: "toast-bridge", delivered: true, required: false },
+      ],
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    const [toastUrl, toastOptions] = fetchMock.mock.calls[1];
+    const toastBody = JSON.parse(String(toastOptions?.body));
+
+    expect(toastUrl).toBe("https://toast-bridge.example.com/tabletap");
+    expect(toastOptions?.headers).toMatchObject({
+      Authorization: "Bearer toast-secret",
+      "Content-Type": "application/json",
+    });
+    expect(toastBody).toMatchObject({
+      source: "tabletap",
+      provider: "toast",
+      restaurantExternalId: "00000000-0000-0000-0000-000000000001",
+      locationName: "Downtown",
+      tableId: "bar-4",
+      requestType: "Check Please",
+      customMessage: "",
+    });
+    expect(toastBody.requestedAt).toEqual(expect.any(String));
   });
 });

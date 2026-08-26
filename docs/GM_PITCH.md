@@ -1,93 +1,93 @@
 # TableTap GM Pitch
 
-## Short version
+## Short Version
 
-TableTap is a QR-based table request system. A guest scans the table QR code,
-taps what they need, and the request is routed to staff with the table number.
-It is meant to reduce small service delays like refills, napkins, sauce, plates,
-and check requests.
+TableTap lets guests scan a QR code at their table and send simple service
+requests to staff. It is meant to reduce missed small requests and make table
+service smoother during busy shifts.
 
-## 30-second pitch
+## 30-Second Pitch
 
-"I built a small demo called TableTap for our restaurant. The idea is simple:
-guests scan a QR code at the table and request common items without waiting to
-flag someone down. The request comes through immediately with the table number.
-It does not touch payments or the POS for the first pilot, so the risk is low.
-I would like to test it on a few tables for one shift and see whether it helps
-staff respond faster to simple requests."
+"I built a working demo called TableTap. Guests scan a table QR code, tap what
+they need, and staff get a table-numbered alert immediately. It does not touch
+payments, customer accounts, or the POS for the first pilot. I would like to
+test it on a few tables for one shift and see whether it helps or gets in the
+way."
 
-## Problem it solves
+## Problem It Solves
 
-- Guests sometimes need small things while servers are busy.
+- Guests wait to flag down staff for small requests.
 - Servers get interrupted while carrying food, taking orders, or closing checks.
-- Managers do not have a simple way to see repeated small service issues.
-- Table requests are easy to miss during a rush.
+- Small requests can be forgotten during a rush.
+- Managers have little visibility into repeated service bottlenecks.
 
-## What the guest sees
+## What Guests See
 
 - Restaurant logo placeholder
 - Table number
 - Large request buttons
 - Optional custom note
-- Confirmation that the request was sent
+- Confirmation after sending
 
-## What staff sees today
+## What Staff Sees Today
 
-- A request alert in a Discord channel or shared device
+- Discord alert or shared-device notification
 - Table number
 - Request type
 - Optional note
 - Timestamp
 
-## Why this is safe to pilot
+## Why It Is Safe To Pilot
 
-- No payment processing
-- No customer accounts
-- No customer personal data required
-- No POS dependency for the first version
-- Can be tested on a small number of tables
+- No payments
+- No customer personal data
+- No POS access required
+- No app download
+- Can be tested on a few tables
 - Can be turned off by removing the QR codes
 
-## Suggested pilot
+## Suggested Pilot
 
-Run it on 5-10 tables for one shift.
+Run TableTap on 5-10 tables for one shift.
 
 Track:
 
-- Number of requests submitted
+- How many requests are submitted
 - Which request types are used most
-- Whether staff found alerts useful or distracting
-- Whether guests understood the QR code
-- Any request categories that should be added or removed
+- Whether alerts are useful or distracting
+- Whether guests understand the QR code
+- Which request categories should change
 
-## Questions to ask the GM
+## Good GM Questions
 
-- Which tables should be included in a first test?
+- Which tables would be safest for a small test?
 - Who should receive the alerts?
-- Should hosts, servers, bussers, or managers own different request types?
-- Which requests should be allowed?
-- Are there requests we should avoid because they create operational problems?
+- Which request categories should be allowed?
+- Which requests should be excluded?
 - What would make this useful enough to keep?
+- If the pilot works, who would approve a larger rollout?
 
-## Future version
+## Future Version
 
 After the pilot, TableTap can grow into:
 
 - Staff dashboard with New, Seen, and Done states
-- POS integration once the restaurant's POS provider and access rules are known
-- Different routing for servers, bussers, bar, and managers
+- Toast-style POS demo screen
 - Request analytics by table, shift, and category
-- Custom branding for the restaurant
+- Role-based routing for servers, bussers, bar, kitchen, and managers
+- Restaurant branding and configurable categories
 - QR code generation for every table
+- Toast/POS bridge integration where appropriate
 
-## Demo script
+## Demo Script
 
 1. Open the public TableTap URL.
 2. Visit `/table/7`.
 3. Tap "Refill" and submit.
-4. Show the staff alert with the table number.
-5. Explain that each table gets its own QR code URL.
-6. Ask for permission to pilot a few tables for one shift.
+4. Show the request appear in `/pos`.
+5. Explain that every table gets its own QR code URL.
+6. Open `/pitch` for the manager-facing overview.
+7. Ask for a small one-shift pilot.
 
 ## Ask
 

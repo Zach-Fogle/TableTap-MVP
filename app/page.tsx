@@ -29,6 +29,12 @@ export default function Home() {
           >
             Manager pitch
           </Link>
+          <Link
+            href="/pos"
+            className="inline-flex min-h-12 items-center justify-center rounded-xl px-6 font-bold text-slate-600 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-500/10 dark:text-slate-200 dark:hover:bg-white/5"
+          >
+            Mock POS dashboard
+          </Link>
         </div>
       </section>
     </main>

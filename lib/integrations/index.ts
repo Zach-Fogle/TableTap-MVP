@@ -1,10 +1,14 @@
 import { createDiscordIntegration } from "@/lib/integrations/discord";
+import { createMockPosIntegration } from "@/lib/integrations/mock-pos";
 import { createPosWebhookIntegration } from "@/lib/integrations/pos-webhook";
+import { createToastBridgeIntegration } from "@/lib/integrations/toast-bridge";
 import type { DeliveryResult } from "@/lib/integrations/types";
 import type { TableRequestEvent } from "@/lib/table-request";
 
 const integrations = [
+  createMockPosIntegration(),
   createDiscordIntegration(),
+  createToastBridgeIntegration(),
   createPosWebhookIntegration(),
 ];
 

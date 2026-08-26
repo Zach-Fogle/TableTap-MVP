@@ -48,6 +48,12 @@ export default function PitchPage() {
           >
             Try table demo
           </Link>
+          <Link
+            href="/pos"
+            className="rounded-full bg-white/80 px-4 py-2 text-sm font-bold text-sage-700 shadow-sm ring-1 ring-sage-600/10 transition hover:bg-white dark:bg-white/10 dark:text-sage-100 dark:ring-white/10"
+          >
+            POS demo
+          </Link>
         </nav>
 
         <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
@@ -72,10 +78,10 @@ export default function PitchPage() {
                 Scan-style demo
               </Link>
               <a
-                href="#pilot"
+                href="/pos"
                 className="inline-flex min-h-12 items-center justify-center rounded-xl bg-sage-50 px-6 font-bold text-sage-700 ring-1 ring-sage-600/10 transition hover:bg-sage-100 dark:bg-white/10 dark:text-sage-100 dark:ring-white/10"
               >
-                Pilot plan
+                Open POS view
               </a>
             </div>
           </div>
