@@ -73,6 +73,7 @@ Use this flow for demos:
 2. Open `/table/7` on a phone.
 3. Send a request.
 4. Mark the request Seen, Working, or Done in the POS dashboard.
+5. Confirm Done requests move out of the active queue into the Completed tab.
 
 The mock POS uses temporary in-memory server state. It proves the workflow, but
 it is not a substitute for a real Toast API integration or database-backed staff
@@ -83,13 +84,12 @@ dashboard.
 ```dotenv
 TOAST_BRIDGE_WEBHOOK_URL=https://your-toast-bridge.example.com/tabletap
 TOAST_BRIDGE_SECRET=shared-secret-between-tabletap-and-bridge
-TOAST_INTEGRATION_REQUIRED=false
 TOAST_RESTAURANT_EXTERNAL_ID=toast-location-guid
 TOAST_LOCATION_NAME=Friendly location name
 ```
 
-Keep `TOAST_INTEGRATION_REQUIRED=false` while testing. That lets Discord stay
-working even if the Toast bridge fails.
+The Toast bridge is optional. While testing, the mock POS and optional Discord
+delivery keep working even if the Toast bridge fails.
 
 ## Direct Toast API Requirements
 

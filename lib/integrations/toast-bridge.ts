@@ -15,7 +15,6 @@ function getToastBridgeHeaders(): Record<string, string> {
 export function createToastBridgeIntegration(): RequestIntegration {
   return {
     name: "toast-bridge",
-    required: process.env.TOAST_INTEGRATION_REQUIRED === "true",
     isConfigured() {
       return Boolean(process.env.TOAST_BRIDGE_WEBHOOK_URL);
     },

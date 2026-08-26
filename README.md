@@ -4,9 +4,10 @@ TableTap is a mobile-first service request app for restaurants. Guests scan a
 table QR code, choose what they need, and the request is routed to staff through
 configured integrations.
 
-The current MVP sends requests to Discord and can also forward structured
-payloads to a generic POS bridge or Toast-specific bridge. It does not store
-guest data, process payments, or require a POS connection to run.
+The current MVP stores requests in a built-in mock POS dashboard and can also
+forward structured payloads to Discord, a generic POS bridge, or a
+Toast-specific bridge. It does not store guest data, process payments, or
+require a real POS connection to run.
 
 ## Features
 
@@ -30,7 +31,7 @@ Guest scans QR code
 → submits request
 → POST /api/request
 → built-in mock POS dashboard
-→ Discord webhook
+→ optional Discord webhook
 → optional Toast/POS bridge
 ```
 
@@ -113,11 +114,9 @@ MOCK_POS_ENABLED=true
 
 POS_WEBHOOK_URL=
 POS_WEBHOOK_SECRET=
-POS_INTEGRATION_REQUIRED=false
 
 TOAST_BRIDGE_WEBHOOK_URL=
 TOAST_BRIDGE_SECRET=
-TOAST_INTEGRATION_REQUIRED=false
 TOAST_RESTAURANT_EXTERNAL_ID=
 TOAST_LOCATION_NAME=
 ```
@@ -132,7 +131,8 @@ Keep real secrets in `.env.local` and Vercel environment variables. Never commit
 3. Copy the webhook URL.
 4. Add it as `DISCORD_WEBHOOK_URL`.
 
-Discord is required by default because it is the MVP's reliable staff alert
+Discord is optional because the mock POS dashboard can receive demo requests on
+its own. Add `DISCORD_WEBHOOK_URL` when you also want staff alerts in a Discord
 channel.
 
 ## Mock POS Demo
@@ -149,7 +149,7 @@ Open:
 The dashboard shows:
 
 - Table statuses
-- Incoming TableTap requests
+- Separate Active and Completed request tabs
 - New, Seen, In Progress, and Done states
 - Table detail pages at `/pos/table/[tableId]`
 
@@ -168,6 +168,9 @@ For now, TableTap supports a Toast bridge:
 ```text
 TableTap → TOAST_BRIDGE_WEBHOOK_URL → Toast integration service → Toast POS
 ```
+
+The Toast bridge is optional. If it fails but the mock POS receives the request,
+the guest still sees a success message.
 
 See [docs/TOAST_INTEGRATION.md](docs/TOAST_INTEGRATION.md) for the integration
 plan, required Toast information, and payload shape.

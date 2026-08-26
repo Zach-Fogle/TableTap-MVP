@@ -5,28 +5,24 @@ import { createToastBridgeIntegration } from "@/lib/integrations/toast-bridge";
 import type { DeliveryResult } from "@/lib/integrations/types";
 import type { TableRequestEvent } from "@/lib/table-request";
 
-const integrations = [
-  createMockPosIntegration(),
-  createDiscordIntegration(),
-  createToastBridgeIntegration(),
-  createPosWebhookIntegration(),
-];
+function getIntegrations() {
+  return [
+    createMockPosIntegration(),
+    createDiscordIntegration(),
+    createToastBridgeIntegration(),
+    createPosWebhookIntegration(),
+  ];
+}
 
 export async function sendTableRequest(event: TableRequestEvent) {
+  const integrations = getIntegrations();
   const activeIntegrations = integrations.filter((integration) =>
     integration.isConfigured(),
   );
 
-  const missingRequired = integrations.filter(
-    (integration) => integration.required && !integration.isConfigured(),
-  );
-
-  if (missingRequired.length > 0) {
-    missingRequired.forEach((integration) => {
-      console.error(`${integration.name} integration is not configured.`);
-    });
-
-    throw new Error("A required request integration is not configured.");
+  if (activeIntegrations.length === 0) {
+    console.error("No request integrations are configured.");
+    throw new Error("No request integrations are configured.");
   }
 
   const results: DeliveryResult[] = [];
@@ -37,21 +33,20 @@ export async function sendTableRequest(event: TableRequestEvent) {
       results.push({
         channel: integration.name,
         delivered: true,
-        required: integration.required,
       });
     } catch (error) {
       console.error(`${integration.name} integration failed.`, error);
 
-      if (integration.required) {
-        throw error;
-      }
-
       results.push({
         channel: integration.name,
         delivered: false,
-        required: integration.required,
       });
     }
+  }
+
+  if (!results.some((result) => result.delivered)) {
+    console.error("All request integrations failed.");
+    throw new Error("All request integrations failed.");
   }
 
   return results;

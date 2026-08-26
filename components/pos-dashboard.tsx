@@ -13,6 +13,8 @@ type PosSnapshot = {
   tables: PosTable[];
 };
 
+type QueueTab = "active" | "completed";
+
 const statusLabels: Record<PosRequestStatus, string> = {
   new: "New",
   seen: "Seen",
@@ -56,6 +58,7 @@ export default function PosDashboard() {
     tables: [],
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedTab, setSelectedTab] = useState<QueueTab>("active");
 
   const loadSnapshot = useCallback(async () => {
     const response = await fetch("/api/mock-pos/requests", {
@@ -90,7 +93,12 @@ export default function PosDashboard() {
     () => snapshot.requests.filter((request) => request.status !== "done"),
     [snapshot.requests],
   );
-  const completedRequests = snapshot.requests.length - activeRequests.length;
+  const completedRequests = useMemo(
+    () => snapshot.requests.filter((request) => request.status === "done"),
+    [snapshot.requests],
+  );
+  const visibleRequests =
+    selectedTab === "active" ? activeRequests : completedRequests;
 
   return (
     <main className="min-h-screen px-5 py-6 sm:px-6 lg:px-8">
@@ -133,7 +141,9 @@ export default function PosDashboard() {
             <p className="text-sm font-bold uppercase tracking-[0.2em] text-sage-600 dark:text-sage-100">
               Completed
             </p>
-            <p className="mt-3 text-5xl font-black">{completedRequests}</p>
+            <p className="mt-3 text-5xl font-black">
+              {completedRequests.length}
+            </p>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-300">
               Requests handled
             </p>
@@ -190,9 +200,47 @@ export default function PosDashboard() {
               <p className="text-sm font-bold uppercase tracking-[0.2em] text-sage-600 dark:text-sage-100">
                 Queue
               </p>
-              <h2 className="text-2xl font-black text-ink dark:text-white">
-                Incoming Requests
-              </h2>
+              <div className="mt-2 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <h2 className="text-2xl font-black text-ink dark:text-white">
+                  {selectedTab === "active"
+                    ? "Active Requests"
+                    : "Completed Requests"}
+                </h2>
+                <div
+                  className="grid grid-cols-2 rounded-2xl bg-slate-100 p-1 dark:bg-white/10"
+                  role="tablist"
+                  aria-label="Request queue tabs"
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={selectedTab === "active"}
+                    onClick={() => setSelectedTab("active")}
+                    className={[
+                      "min-h-10 rounded-xl px-4 text-sm font-black transition",
+                      selectedTab === "active"
+                        ? "bg-ink text-white shadow-sm dark:bg-white dark:text-ink"
+                        : "text-slate-500 hover:text-ink dark:text-slate-300 dark:hover:text-white",
+                    ].join(" ")}
+                  >
+                    Active ({activeRequests.length})
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={selectedTab === "completed"}
+                    onClick={() => setSelectedTab("completed")}
+                    className={[
+                      "min-h-10 rounded-xl px-4 text-sm font-black transition",
+                      selectedTab === "completed"
+                        ? "bg-ink text-white shadow-sm dark:bg-white dark:text-ink"
+                        : "text-slate-500 hover:text-ink dark:text-slate-300 dark:hover:text-white",
+                    ].join(" ")}
+                  >
+                    Completed ({completedRequests.length})
+                  </button>
+                </div>
+              </div>
             </div>
 
             {snapshot.requests.length === 0 ? (
@@ -200,9 +248,15 @@ export default function PosDashboard() {
                 No requests yet. Open `/table/7`, send one, and watch it land
                 here.
               </div>
+            ) : visibleRequests.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-slate-500 dark:border-white/20 dark:text-slate-300">
+                {selectedTab === "active"
+                  ? "No active requests. New table requests will appear here."
+                  : "No completed requests yet. Mark an active request Done to move it here."}
+              </div>
             ) : (
               <div className="space-y-3">
-                {snapshot.requests.map((request) => (
+                {visibleRequests.map((request) => (
                   <article
                     key={request.id}
                     className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/5"
@@ -228,29 +282,44 @@ export default function PosDashboard() {
                         {statusLabels[request.status]}
                       </span>
                     </div>
-                    <div className="mt-4 grid grid-cols-3 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => updateStatus(request.id, "seen")}
-                        className="min-h-10 rounded-xl bg-amber-100 px-3 text-sm font-bold text-amber-800"
-                      >
-                        Seen
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => updateStatus(request.id, "in_progress")}
-                        className="min-h-10 rounded-xl bg-blue-100 px-3 text-sm font-bold text-blue-800"
-                      >
-                        Working
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => updateStatus(request.id, "done")}
-                        className="min-h-10 rounded-xl bg-sage-600 px-3 text-sm font-bold text-white"
-                      >
-                        Done
-                      </button>
-                    </div>
+                    {selectedTab === "active" ? (
+                      <div className="mt-4 grid grid-cols-3 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => updateStatus(request.id, "seen")}
+                          className="min-h-10 rounded-xl bg-amber-100 px-3 text-sm font-bold text-amber-800"
+                        >
+                          Seen
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateStatus(request.id, "in_progress")
+                          }
+                          className="min-h-10 rounded-xl bg-blue-100 px-3 text-sm font-bold text-blue-800"
+                        >
+                          Working
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateStatus(request.id, "done")}
+                          className="min-h-10 rounded-xl bg-sage-600 px-3 text-sm font-bold text-white"
+                        >
+                          Done
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="mt-4 flex items-center justify-between rounded-xl bg-sage-50 px-4 py-3 text-sm font-bold text-sage-700 dark:bg-sage-600/20 dark:text-sage-100">
+                        Completed and removed from the active queue
+                        <button
+                          type="button"
+                          onClick={() => updateStatus(request.id, "new")}
+                          className="rounded-lg bg-white px-3 py-2 text-xs font-black text-sage-700 shadow-sm dark:bg-white/10 dark:text-white"
+                        >
+                          Reopen
+                        </button>
+                      </div>
+                    )}
                   </article>
                 ))}
               </div>

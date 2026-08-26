@@ -20,12 +20,11 @@ describe("POST /api/request", () => {
     vi.restoreAllMocks();
     delete process.env.DISCORD_WEBHOOK_URL;
     delete process.env.RESTAURANT_TIME_ZONE;
+    delete process.env.MOCK_POS_ENABLED;
     delete process.env.POS_WEBHOOK_URL;
     delete process.env.POS_WEBHOOK_SECRET;
-    delete process.env.POS_INTEGRATION_REQUIRED;
     delete process.env.TOAST_BRIDGE_WEBHOOK_URL;
     delete process.env.TOAST_BRIDGE_SECRET;
-    delete process.env.TOAST_INTEGRATION_REQUIRED;
     delete process.env.TOAST_RESTAURANT_EXTERNAL_ID;
     delete process.env.TOAST_LOCATION_NAME;
   });
@@ -47,8 +46,8 @@ describe("POST /api/request", () => {
     expect(await response.json()).toEqual({
       success: true,
       deliveries: [
-        { channel: "mock-pos", delivered: true, required: false },
-        { channel: "discord", delivered: true, required: true },
+        { channel: "mock-pos", delivered: true },
+        { channel: "discord", delivered: true },
       ],
     });
     expect(fetchMock).toHaveBeenCalledOnce();
@@ -77,7 +76,28 @@ describe("POST /api/request", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("returns a gateway error when Discord rejects the webhook", async () => {
+  it("succeeds with mock POS when Discord is not configured", async () => {
+    process.env.DISCORD_WEBHOOK_URL =
+      "https://discord.com/api/webhooks/your-webhook-id/your-webhook-token";
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+
+    const response = await POST(
+      createRequest({
+        tableId: "12",
+        requestType: "Check Please",
+        customMessage: "",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      success: true,
+      deliveries: [{ channel: "mock-pos", delivered: true }],
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("still succeeds when an optional Discord webhook fails", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response("Invalid webhook", { status: 404 }),
     );
@@ -87,6 +107,31 @@ describe("POST /api/request", () => {
       createRequest({
         tableId: "12",
         requestType: "Check Please",
+        customMessage: "",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      success: true,
+      deliveries: [
+        { channel: "mock-pos", delivered: true },
+        { channel: "discord", delivered: false },
+      ],
+    });
+  });
+
+  it("returns a gateway error when no output receives the request", async () => {
+    process.env.MOCK_POS_ENABLED = "false";
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("Invalid webhook", { status: 404 }),
+    );
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const response = await POST(
+      createRequest({
+        tableId: "8",
+        requestType: "Plates",
         customMessage: "",
       }),
     );
@@ -116,9 +161,9 @@ describe("POST /api/request", () => {
     expect(await response.json()).toEqual({
       success: true,
       deliveries: [
-        { channel: "mock-pos", delivered: true, required: false },
-        { channel: "discord", delivered: true, required: true },
-        { channel: "pos-webhook", delivered: true, required: false },
+        { channel: "mock-pos", delivered: true },
+        { channel: "discord", delivered: true },
+        { channel: "pos-webhook", delivered: true },
       ],
     });
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -163,9 +208,9 @@ describe("POST /api/request", () => {
     expect(await response.json()).toEqual({
       success: true,
       deliveries: [
-        { channel: "mock-pos", delivered: true, required: false },
-        { channel: "discord", delivered: true, required: true },
-        { channel: "toast-bridge", delivered: true, required: false },
+        { channel: "mock-pos", delivered: true },
+        { channel: "discord", delivered: true },
+        { channel: "toast-bridge", delivered: true },
       ],
     });
     expect(fetchMock).toHaveBeenCalledTimes(2);

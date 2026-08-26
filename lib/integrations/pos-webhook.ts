@@ -15,7 +15,6 @@ function getAuthHeaders(): Record<string, string> {
 export function createPosWebhookIntegration(): RequestIntegration {
   return {
     name: "pos-webhook",
-    required: process.env.POS_INTEGRATION_REQUIRED === "true",
     isConfigured() {
       return Boolean(process.env.POS_WEBHOOK_URL);
     },

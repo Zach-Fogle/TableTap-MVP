@@ -1,6 +1,25 @@
 import type { RequestIntegration } from "@/lib/integrations/types";
 import { formatRequestTime } from "@/lib/table-request";
 
+function isPlaceholderWebhookUrl(value: string) {
+  return (
+    value.includes("your-webhook") ||
+    value.includes("REAL_ID") ||
+    value.includes("REAL_TOKEN") ||
+    value.endsWith("/...")
+  );
+}
+
+function getDiscordWebhookUrl() {
+  const webhookUrl = process.env.DISCORD_WEBHOOK_URL?.trim();
+
+  if (!webhookUrl || isPlaceholderWebhookUrl(webhookUrl)) {
+    return null;
+  }
+
+  return webhookUrl;
+}
+
 function escapeDiscordMarkdown(value: string) {
   return value
     .replace(/\\/g, "\\\\")
@@ -11,12 +30,11 @@ function escapeDiscordMarkdown(value: string) {
 export function createDiscordIntegration(): RequestIntegration {
   return {
     name: "discord",
-    required: true,
     isConfigured() {
-      return Boolean(process.env.DISCORD_WEBHOOK_URL);
+      return Boolean(getDiscordWebhookUrl());
     },
     async send(event) {
-      const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+      const webhookUrl = getDiscordWebhookUrl();
 
       if (!webhookUrl) {
         throw new Error("DISCORD_WEBHOOK_URL is not configured.");

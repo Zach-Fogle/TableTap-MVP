@@ -31,7 +31,8 @@ way."
 
 ## What Staff Sees Today
 
-- Discord alert or shared-device notification
+- Mock POS dashboard
+- Optional Discord alert or shared-device notification
 - Table number
 - Request type
 - Optional note
@@ -78,6 +79,7 @@ After the pilot, TableTap can grow into:
 - Restaurant branding and configurable categories
 - QR code generation for every table
 - Toast/POS bridge integration where appropriate
+- Separate active and completed request queues
 
 ## Demo Script
 
