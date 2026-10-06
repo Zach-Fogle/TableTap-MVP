@@ -1,87 +1,36 @@
-# TableTap
+# TableTap Restaurant Service Request MVP
 
-TableTap is a mobile-first service request app for restaurants. Guests scan a
-table QR code, choose what they need, and the request is routed to staff through
-configured integrations.
+TableTap is a mobile-first restaurant service-request prototype. Guests open a table-specific page through a QR code, submit a request, and staff track it in a mock POS queue. The idea draws on firsthand restaurant-service experience.
 
-The current MVP stores requests in a built-in mock POS dashboard and can also
-forward structured payloads to Discord, a generic POS bridge, or a
-Toast-specific bridge. It does not store guest data, process payments, or
-require a real POS connection to run.
+**Status:** Local/demo MVP with temporary in-memory storage. This is not a production restaurant system or a verified Toast integration.
 
-## Features
+## Problem
 
-- Dynamic QR-friendly table pages: `/table/[tableId]`
-- Large mobile touch targets for common requests
-- Optional custom guest note
-- Success, loading, and friendly error states
-- Duplicate-submission lockout after a successful request
-- Server-side validation and error logging
-- Discord webhook delivery
-- Built-in Toast-style mock POS dashboard
-- Optional generic POS webhook bridge
-- Optional Toast bridge payload
-- Manager-facing pitch page: `/pitch`
+Guests need a simple way to request refills, the check, or assistance while staff are busy. TableTap demonstrates a guest-to-staff request workflow; improvements in response time or guest satisfaction have not been measured.
 
-## How It Works
+## Stack and architecture
 
-```text
-Guest scans QR code
-→ opens /table/7
-→ submits request
-→ POST /api/request
-→ built-in mock POS dashboard
-→ optional Discord webhook
-→ optional Toast/POS bridge
+TypeScript, Next.js App Router, React and Tailwind CSS.
+
+```mermaid
+flowchart LR
+  Guest[Table-specific guest page] --> API[POST /api/request]
+  API --> Validation[Server-side validation]
+  Validation --> Store[In-memory mock POS store]
+  Store --> Staff[Staff dashboard]
+  Validation --> Hooks[Optional webhook adapters]
 ```
 
-Each table URL is generated automatically by the Next.js dynamic route:
+- `app/table/[tableId]/page.tsx`: dynamic guest pages.
+- `app/api/request/route.ts`: request validation and delivery.
+- `components/request-panel.tsx`: guest form, feedback and duplicate-submission lockout.
+- `lib/mock-pos-store.ts`: temporary request state.
+- `app/pos/` and `components/pos-dashboard.tsx`: staff queue and table views.
+- `lib/integrations/`: mock POS, Discord and optional bridge adapters.
 
-```text
-app/table/[tableId]/page.tsx
-```
+## Run locally
 
-To create a QR code for a new table, point the QR code at the deployed URL:
-
-```text
-https://your-domain.com/table/12
-```
-
-No new page file is needed for each table.
-
-## Project Structure
-
-```text
-app/
-  api/request/route.ts       Validated request endpoint
-  api/mock-pos/              Mock POS request and table APIs
-  pos/page.tsx               Toast-style floor and request dashboard
-  pos/table/[tableId]/       Mock table/check detail view
-  pitch/page.tsx             Manager-facing product pitch page
-  table/[tableId]/page.tsx   Dynamic table route
-  globals.css                Global Tailwind and theme styles
-  layout.tsx                 Root metadata and viewport
-  page.tsx                   Landing page
-components/
-  pos-dashboard.tsx          Staff-facing mock POS queue
-  pos-table-detail.tsx       Mock POS table/check detail page
-  request-icons.tsx          Request button icons
-  request-panel.tsx          Interactive customer request form
-docs/
-  GM_PITCH.md                Script and pilot plan for restaurant managers
-  TOAST_INTEGRATION.md       Toast POS integration plan
-lib/
-  integrations/              Discord, Toast, and POS delivery adapters
-  mock-pos-store.ts          In-memory demo POS request store
-  table-request.ts           Request validation and timestamp helpers
-```
-
-## Local Development
-
-Requirements:
-
-- Node.js 20 or newer
-- npm
+Use Node.js 20 or newer and npm.
 
 ```bash
 npm install
@@ -89,155 +38,41 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open:
+For a mock-only demo, set `DISCORD_WEBHOOK_URL=` in `.env.local` and leave `MOCK_POS_ENABLED=true`. Keep real secrets out of Git.
 
-```text
-http://localhost:3000/table/7
-```
+## Walk through the demo
 
-For the full demo, open the mock POS dashboard in another browser tab:
+1. Open <http://localhost:3000/table/7>.
+2. Open <http://localhost:3000/pos> in another tab.
+3. Submit a guest request and confirm it appears in the staff queue.
+4. Move the request through New, Seen, In Progress and Done.
+5. Inspect the table detail page at `/pos/table/7`.
 
-```text
-http://localhost:3000/pos
-```
+QR codes should point to the relevant `/table/[tableId]` URL on a reachable deployment. The local URLs above are for development.
 
-Then submit a request from `/table/7` and watch it appear in `/pos`.
+## Integrations
 
-## Environment Variables
+Discord delivery is optional through `DISCORD_WEBHOOK_URL`. Generic POS delivery uses `POS_WEBHOOK_URL` and optionally `POS_WEBHOOK_SECRET`. See `.env.example` for all configuration.
 
-Create `.env.local` from `.env.example`.
+The Toast adapter sends a structured payload to a separately hosted bridge. This repository does not implement direct Toast order creation or include a working Toast integration service. See [the integration plan](docs/TOAST_INTEGRATION.md) for the proposed approach. A successful mock delivery does not demonstrate delivery to Toast.
 
-```dotenv
-DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
-RESTAURANT_TIME_ZONE=America/New_York
-MOCK_POS_ENABLED=true
-
-POS_WEBHOOK_URL=
-POS_WEBHOOK_SECRET=
-
-TOAST_BRIDGE_WEBHOOK_URL=
-TOAST_BRIDGE_SECRET=
-TOAST_RESTAURANT_EXTERNAL_ID=
-TOAST_LOCATION_NAME=
-```
-
-Keep real secrets in `.env.local` and Vercel environment variables. Never commit
-`.env.local`.
-
-## Discord Setup
-
-1. In Discord, open **Server Settings > Integrations > Webhooks**.
-2. Create a webhook for the channel staff will monitor.
-3. Copy the webhook URL.
-4. Add it as `DISCORD_WEBHOOK_URL`.
-
-Discord is optional because the mock POS dashboard can receive demo requests on
-its own. Add `DISCORD_WEBHOOK_URL` when you also want staff alerts in a Discord
-channel.
-
-## Mock POS Demo
-
-The built-in mock POS gives you a Toast-style demonstration without needing
-Toast approval or credentials.
-
-Open:
-
-```text
-/pos
-```
-
-The dashboard shows:
-
-- Table statuses
-- Separate Active and Completed request tabs
-- New, Seen, In Progress, and Done states
-- Table detail pages at `/pos/table/[tableId]`
-
-The mock POS uses temporary in-memory server state. It is useful for demos, but
-it is not durable storage. On Vercel, memory can reset when the serverless
-function restarts. A production version should move request storage to a real
-database such as Vercel Postgres, Neon, or Supabase.
-
-## Toast / POS Setup
-
-TableTap does not directly create Toast orders yet. Toast production API access
-requires credentials, scopes, restaurant approval, and a Toast restaurant GUID.
-
-For now, TableTap supports a Toast bridge:
-
-```text
-TableTap → TOAST_BRIDGE_WEBHOOK_URL → Toast integration service → Toast POS
-```
-
-The Toast bridge is optional. If it fails but the mock POS receives the request,
-the guest still sees a success message.
-
-See [docs/TOAST_INTEGRATION.md](docs/TOAST_INTEGRATION.md) for the integration
-plan, required Toast information, and payload shape.
-
-## Quality Checks
+## Checks
 
 ```bash
 npm run lint
 npm test
 npm run build
-npm audit --audit-level=low
 ```
 
-## Deploy To Vercel
+The repository includes request-route tests.
 
-1. Push the project to GitHub.
-2. Import the repository at `https://vercel.com/new`.
-3. Add `DISCORD_WEBHOOK_URL` in **Project Settings > Environment Variables**.
-4. Optionally add `RESTAURANT_TIME_ZONE`, `TOAST_BRIDGE_WEBHOOK_URL`,
-   `TOAST_BRIDGE_SECRET`, `TOAST_RESTAURANT_EXTERNAL_ID`,
-   `TOAST_LOCATION_NAME`, and any generic POS bridge variables.
-5. Deploy.
+## Limitations and next steps
 
-After deployment, create QR codes pointing to URLs such as:
+- Requests are held in server memory and can disappear on restart or be inconsistent across server instances. Add persistent storage before a restaurant pilot.
+- Staff pages have no authentication. Add authentication and access controls before production use.
+- Table IDs are URL-based and are not mapped to Toast table GUIDs.
+- No payments or direct Toast order creation are implemented.
+- Use non-sensitive demo notes; do not enter real customer information.
+- Restaurant testing and a recorded demo remain next steps.
 
-```text
-https://your-domain.com/table/7
-```
-
-## GitHub Upload Checklist
-
-Before pushing, run:
-
-```bash
-npm run lint
-npm test
-npm run build
-npm audit --audit-level=low
-git status
-```
-
-Safe files to commit include source code, docs, `package.json`,
-`package-lock.json`, `.env.example`, and `next-env.d.ts`.
-
-Do not commit:
-
-- `.env.local`
-- `.next/`
-- `node_modules/`
-- `.vercel/`
-- `.venv/`
-
-These are already covered by `.gitignore`.
-
-## Current Limitations
-
-- No persistent database yet
-- Mock POS dashboard state is temporary and can reset on server restart
-- No authentication for manager/admin pages
-- Direct Toast API order creation is not implemented
-- Table IDs are URL-based and not yet mapped to Toast table GUIDs
-
-## Recommended Next Steps
-
-1. Run a small pilot using Discord delivery.
-2. Replace the mock POS memory store with a database.
-3. Confirm the restaurant's Toast product and API access path.
-4. Build the Toast bridge service once credentials and mapping rules exist.
-5. Decide which requests should become POS actions and which should remain staff
-   alerts.
+The [manager pitch and pilot plan](docs/GM_PITCH.md) describes the intended use case, not a completed pilot.
