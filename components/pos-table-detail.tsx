@@ -35,7 +35,11 @@ export default function PosTableDetail({ tableId }: { tableId: string }) {
     await fetch(`/api/mock-pos/requests/${request.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "done" }),
+      body: JSON.stringify({
+        status: "done",
+        expectedVersion: request.version,
+        actor: "Table detail terminal",
+      }),
     });
     await loadTable();
   };
@@ -124,6 +128,11 @@ export default function PosTableDetail({ tableId }: { tableId: string }) {
                             {request.customMessage}
                           </p>
                         )}
+                        <p className="mt-1 text-sm font-bold text-sage-700 dark:text-sage-100">
+                          {request.assignedTo
+                            ? `Owner: ${request.assignedTo}`
+                            : "Unassigned"}
+                        </p>
                       </div>
                       {request.status === "done" ? (
                         <span className="rounded-full bg-sage-100 px-3 py-1 text-xs font-black text-sage-700">
