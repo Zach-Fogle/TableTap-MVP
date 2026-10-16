@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   PosRequest,
@@ -52,14 +53,14 @@ function formatRequestTime(value: string) {
   }).format(new Date(value));
 }
 
-export default function PosDashboard() {
+export default function PosDashboard({ staffName }: { staffName: string }) {
+  const router = useRouter();
   const [snapshot, setSnapshot] = useState<PosSnapshot>({
     requests: [],
     tables: [],
   });
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState<QueueTab>("active");
-  const [staffName, setStaffName] = useState("Shift Lead");
   const [message, setMessage] = useState("");
 
   const loadSnapshot = useCallback(async () => {
@@ -67,13 +68,18 @@ export default function PosDashboard() {
       cache: "no-store",
     });
 
+    if (response.status === 401) {
+      router.replace("/pos/login");
+      return;
+    }
+
     if (!response.ok) {
       return;
     }
 
     setSnapshot((await response.json()) as PosSnapshot);
     setIsLoading(false);
-  }, []);
+  }, [router]);
 
   const updateRequest = async (
     request: PosRequest,
@@ -130,16 +136,9 @@ export default function PosDashboard() {
             TableTap POS Demo
           </Link>
           <div className="flex flex-wrap gap-2">
-            <label className="flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-sage-700 shadow-sm ring-1 ring-black/5 dark:bg-white/10 dark:text-sage-100 dark:ring-white/10">
-              Working as
-              <input
-                value={staffName}
-                onChange={(event) => setStaffName(event.target.value)}
-                maxLength={80}
-                className="w-28 bg-transparent text-ink outline-none dark:text-white"
-                aria-label="Current staff member"
-              />
-            </label>
+            <span className="flex items-center rounded-full bg-white px-4 py-2 text-sm font-bold text-sage-700 shadow-sm ring-1 ring-black/5 dark:bg-white/10 dark:text-sage-100 dark:ring-white/10">
+              Signed in: {staffName}
+            </span>
             <Link
               href="/table/7"
               className="rounded-full bg-white px-4 py-2 text-sm font-bold text-sage-700 shadow-sm ring-1 ring-black/5 dark:bg-white/10 dark:text-sage-100 dark:ring-white/10"
@@ -152,6 +151,16 @@ export default function PosDashboard() {
             >
               Pitch
             </Link>
+            <button
+              type="button"
+              onClick={async () => {
+                await fetch("/api/auth/logout", { method: "POST" });
+                router.replace("/pos/login");
+              }}
+              className="rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-600 shadow-sm ring-1 ring-black/5 dark:bg-white/10 dark:text-slate-200 dark:ring-white/10"
+            >
+              Sign out
+            </button>
           </div>
         </nav>
 

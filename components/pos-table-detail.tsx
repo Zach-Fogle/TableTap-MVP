@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { PosRequest, PosTable } from "@/lib/mock-pos-store";
 
@@ -18,6 +19,7 @@ function formatDateTime(value: string) {
 }
 
 export default function PosTableDetail({ tableId }: { tableId: string }) {
+  const router = useRouter();
   const [table, setTable] = useState<PosTable | null>(null);
 
   const loadTable = useCallback(async () => {
@@ -25,11 +27,16 @@ export default function PosTableDetail({ tableId }: { tableId: string }) {
       cache: "no-store",
     });
 
+    if (response.status === 401) {
+      router.replace("/pos/login");
+      return;
+    }
+
     if (response.ok) {
       const data = (await response.json()) as TableResponse;
       setTable(data.table);
     }
-  }, [tableId]);
+  }, [router, tableId]);
 
   const markDone = async (request: PosRequest) => {
     await fetch(`/api/mock-pos/requests/${request.id}`, {

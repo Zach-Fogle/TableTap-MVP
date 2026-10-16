@@ -5,6 +5,7 @@ import {
   isValidPosStatus,
   updateMockPosRequestStatus,
 } from "@/lib/mock-pos-store";
+import { getRequestStaffSession } from "@/lib/staff-auth";
 
 type RequestStatusRouteProps = {
   params: Promise<{ requestId: string }>;
@@ -12,6 +13,10 @@ type RequestStatusRouteProps = {
 
 export async function PATCH(request: Request, { params }: RequestStatusRouteProps) {
   const { requestId } = await params;
+  const session = getRequestStaffSession(request);
+  if (!session) {
+    return NextResponse.json({ error: "Staff sign-in required." }, { status: 401 });
+  }
   const payload = (await request.json()) as {
     status?: unknown;
     assignee?: unknown;
@@ -35,6 +40,7 @@ export async function PATCH(request: Request, { params }: RequestStatusRouteProp
       requestId,
       payload.assignee.trim(),
       expectedVersion,
+      session.restaurantId,
     );
 
     if (!result.ok) {
@@ -63,7 +69,8 @@ export async function PATCH(request: Request, { params }: RequestStatusRouteProp
     requestId,
     payload.status,
     expectedVersion,
-    typeof payload.actor === "string" ? payload.actor.trim() : undefined,
+    session.staffName,
+    session.restaurantId,
   );
 
   if (!result.ok) {

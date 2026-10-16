@@ -19,6 +19,7 @@ beforeEach(() => {
 
 afterEach(() => {
   delete process.env.TABLETAP_DB_PATH;
+  delete process.env.TABLETAP_RESTAURANT_ID;
   rmSync(testDirectory, { recursive: true, force: true });
 });
 
@@ -67,6 +68,23 @@ describe("persistent POS request store", () => {
     expect(updateMockPosRequestStatus(request.id, "done", request.version)).toEqual({
       ok: false,
       reason: "conflict",
+    });
+  });
+
+  it("keeps requests isolated by restaurant", () => {
+    process.env.TABLETAP_RESTAURANT_ID = "venue-a";
+    const request = addMockPosRequest({
+      tableId: "2",
+      requestType: "Plates",
+      customMessage: "",
+      requestedAt: new Date("2026-07-27T18:10:00.000Z"),
+    });
+
+    expect(listMockPosRequests("venue-a")).toHaveLength(1);
+    expect(listMockPosRequests("venue-b")).toHaveLength(0);
+    expect(assignMockPosRequest(request.id, "Shift Lead", request.version, "venue-b")).toEqual({
+      ok: false,
+      reason: "not_found",
     });
   });
 });

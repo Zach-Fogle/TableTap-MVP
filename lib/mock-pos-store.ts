@@ -7,6 +7,7 @@ export type PosRequestStatus = "new" | "seen" | "in_progress" | "done";
 
 export type PosRequest = {
   id: string;
+  restaurantId: string;
   tableId: string;
   requestType: string;
   customMessage: string;
@@ -38,6 +39,7 @@ export type PosRequestEvent = {
 
 type RequestRow = {
   id: string;
+  restaurant_id: string;
   table_id: string;
   request_type: string;
   custom_message: string;
@@ -56,6 +58,10 @@ export type UpdateResult =
 
 const INITIAL_TABLE_IDS = Array.from({ length: 16 }, (_, index) => String(index + 1));
 
+function defaultRestaurantId() {
+  return process.env.TABLETAP_RESTAURANT_ID || "demo-restaurant";
+}
+
 function databasePath() {
   return process.env.TABLETAP_DB_PATH || join(process.cwd(), ".data", "tabletap.db");
 }
@@ -68,6 +74,7 @@ function openDatabase() {
   database.exec(`
     CREATE TABLE IF NOT EXISTS pos_requests (
       id TEXT PRIMARY KEY,
+      restaurant_id TEXT NOT NULL,
       table_id TEXT NOT NULL,
       request_type TEXT NOT NULL,
       custom_message TEXT NOT NULL DEFAULT '',
@@ -93,12 +100,18 @@ function openDatabase() {
     CREATE INDEX IF NOT EXISTS idx_pos_requests_status ON pos_requests(status);
     CREATE INDEX IF NOT EXISTS idx_pos_request_events_request ON pos_request_events(request_id);
   `);
+  const requestColumns = database.prepare("PRAGMA table_info(pos_requests)").all() as { name: string }[];
+  if (!requestColumns.some((column) => column.name === "restaurant_id")) {
+    database.exec("ALTER TABLE pos_requests ADD COLUMN restaurant_id TEXT NOT NULL DEFAULT 'demo-restaurant'");
+  }
+  database.exec("CREATE INDEX IF NOT EXISTS idx_pos_requests_restaurant ON pos_requests(restaurant_id)");
   return database;
 }
 
 function mapRequest(row: RequestRow): PosRequest {
   return {
     id: row.id,
+    restaurantId: row.restaurant_id,
     tableId: row.table_id,
     requestType: row.request_type,
     customMessage: row.custom_message,
@@ -126,8 +139,9 @@ function getTableStatus(requests: PosRequest[]): PosTable["status"] {
   return requests.length > 0 ? "clear" : "open";
 }
 
-function findRequest(database: DatabaseSync, requestId: string) {
-  const row = database.prepare("SELECT * FROM pos_requests WHERE id = ?").get(requestId) as RequestRow | undefined;
+function findRequest(database: DatabaseSync, requestId: string, restaurantId: string) {
+  const row = database.prepare("SELECT * FROM pos_requests WHERE id = ? AND restaurant_id = ?")
+    .get(requestId, restaurantId) as RequestRow | undefined;
   return row ? mapRequest(row) : null;
 }
 
@@ -136,15 +150,15 @@ export function addMockPosRequest(event: TableRequestEvent) {
   try {
     const now = event.requestedAt.toISOString();
     const request: PosRequest = {
-      id: createRequestId(), tableId: event.tableId, requestType: event.requestType,
+      id: createRequestId(), restaurantId: defaultRestaurantId(), tableId: event.tableId, requestType: event.requestType,
       customMessage: event.customMessage, requestedAt: now, status: "new",
       assignedTo: null, assignedAt: null, completedAt: null, updatedAt: now, version: 1,
     };
     database.exec("BEGIN IMMEDIATE");
     database.prepare(`INSERT INTO pos_requests
-      (id, table_id, request_type, custom_message, requested_at, status, updated_at, version)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(request.id, request.tableId, request.requestType, request.customMessage,
+      (id, restaurant_id, table_id, request_type, custom_message, requested_at, status, updated_at, version)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(request.id, request.restaurantId, request.tableId, request.requestType, request.customMessage,
         request.requestedAt, request.status, request.updatedAt, request.version);
     database.prepare(`INSERT INTO pos_request_events
       (request_id, event_type, new_value, occurred_at) VALUES (?, 'created', ?, ?)`)
@@ -159,16 +173,17 @@ export function addMockPosRequest(event: TableRequestEvent) {
   }
 }
 
-export function listMockPosRequests() {
+export function listMockPosRequests(restaurantId = defaultRestaurantId()) {
   const database = openDatabase();
   try {
-    const rows = database.prepare("SELECT * FROM pos_requests ORDER BY requested_at DESC").all() as RequestRow[];
+    const rows = database.prepare("SELECT * FROM pos_requests WHERE restaurant_id = ? ORDER BY requested_at DESC")
+      .all(restaurantId) as RequestRow[];
     return rows.map(mapRequest);
   } finally { database.close(); }
 }
 
-export function listMockPosTables() {
-  const requests = listMockPosRequests();
+export function listMockPosTables(restaurantId = defaultRestaurantId()) {
+  const requests = listMockPosRequests(restaurantId);
   const tableIds = new Set([...INITIAL_TABLE_IDS, ...requests.map((request) => request.tableId)]);
   return [...tableIds].sort((a, b) => Number(a) - Number(b)).map((tableId) => {
     const tableRequests = requests.filter((request) => request.tableId === tableId);
@@ -176,16 +191,17 @@ export function listMockPosTables() {
   });
 }
 
-export function getMockPosTable(tableId: string) {
-  return listMockPosTables().find((table) => table.id === tableId) || null;
+export function getMockPosTable(tableId: string, restaurantId = defaultRestaurantId()) {
+  return listMockPosTables(restaurantId).find((table) => table.id === tableId) || null;
 }
 
 export function updateMockPosRequestStatus(
   requestId: string, status: PosRequestStatus, expectedVersion?: number, actor?: string,
+  restaurantId = defaultRestaurantId(),
 ): UpdateResult {
   const database = openDatabase();
   try {
-    const current = findRequest(database, requestId);
+    const current = findRequest(database, requestId, restaurantId);
     if (!current) return { ok: false, reason: "not_found" };
     if (expectedVersion !== undefined && current.version !== expectedVersion) return { ok: false, reason: "conflict" };
     const now = new Date().toISOString();
@@ -198,14 +214,19 @@ export function updateMockPosRequestStatus(
       (request_id, event_type, actor, previous_value, new_value, occurred_at)
       VALUES (?, 'status_changed', ?, ?, ?, ?)`)
       .run(requestId, actor || null, current.status, status, now);
-    return { ok: true, request: findRequest(database, requestId)! };
+    return { ok: true, request: findRequest(database, requestId, restaurantId)! };
   } finally { database.close(); }
 }
 
-export function assignMockPosRequest(requestId: string, assignee: string, expectedVersion?: number): UpdateResult {
+export function assignMockPosRequest(
+  requestId: string,
+  assignee: string,
+  expectedVersion?: number,
+  restaurantId = defaultRestaurantId(),
+): UpdateResult {
   const database = openDatabase();
   try {
-    const current = findRequest(database, requestId);
+    const current = findRequest(database, requestId, restaurantId);
     if (!current) return { ok: false, reason: "not_found" };
     if (expectedVersion !== undefined && current.version !== expectedVersion) return { ok: false, reason: "conflict" };
     const now = new Date().toISOString();
@@ -218,17 +239,19 @@ export function assignMockPosRequest(requestId: string, assignee: string, expect
       VALUES (?, ?, ?, ?, ?, ?)`)
       .run(requestId, current.assignedTo ? "reassigned" : "assigned",
         assignee, current.assignedTo, assignee, now);
-    return { ok: true, request: findRequest(database, requestId)! };
+    return { ok: true, request: findRequest(database, requestId, restaurantId)! };
   } finally { database.close(); }
 }
 
-export function listMockPosRequestEvents(requestId: string) {
+export function listMockPosRequestEvents(requestId: string, restaurantId = defaultRestaurantId()) {
   const database = openDatabase();
   try {
     return database.prepare(`SELECT id, request_id AS requestId, event_type AS eventType,
       actor, previous_value AS previousValue, new_value AS newValue,
       occurred_at AS occurredAt FROM pos_request_events
-      WHERE request_id = ? ORDER BY id ASC`).all(requestId) as PosRequestEvent[];
+      WHERE request_id = ? AND request_id IN
+        (SELECT id FROM pos_requests WHERE restaurant_id = ?)
+      ORDER BY id ASC`).all(requestId, restaurantId) as PosRequestEvent[];
   } finally { database.close(); }
 }
 

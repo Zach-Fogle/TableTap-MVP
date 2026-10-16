@@ -6,8 +6,14 @@ and track it in a mock POS queue. The concept and operating requirements draw on
 firsthand restaurant-service experience and two server interviews.
 
 **Status:** Working local MVP with SQLite persistence, named request ownership,
-event history, and optional webhook delivery. It is not a production restaurant
-system or a verified Toast integration.
+event history, PIN-protected staff sessions, restaurant-scoped queues, and
+optional webhook delivery. It is not a production restaurant system or a
+verified Toast integration.
+
+![Authenticated staff queue with named request ownership](docs/screenshots/staff-dashboard-authenticated.png)
+
+[Read the consulting case study](docs/case-study/Zach_Fogle_TableTap_Consulting_Case_Study.pdf)
+or use the [employee walkthrough guide](docs/EMPLOYEE_WALKTHROUGH.md).
 
 ## Problem
 
@@ -21,6 +27,8 @@ responsibility.
 - Dynamic, QR-friendly guest pages at `/table/[tableId]`
 - Mobile request buttons, optional notes, validation, and submission feedback
 - Staff dashboard with active and completed queues
+- Signed, eight-hour staff sessions protected by a restaurant PIN
+- Restaurant-scoped queue reads and updates
 - Named request ownership with claim and reassignment controls
 - SQLite persistence for requests, assignments, completion times, and event history
 - Version checks that reject updates from stale queue snapshots
@@ -59,14 +67,15 @@ npm run dev
 
 For a local mock-only demo, leave `DISCORD_WEBHOOK_URL=` and keep
 `MOCK_POS_ENABLED=true`. Requests are stored in `.data/tabletap.db` unless
-`TABLETAP_DB_PATH` specifies another file.
+`TABLETAP_DB_PATH` specifies another file. Set a long random
+`TABLETAP_AUTH_SECRET`, a staff PIN, and a restaurant ID before opening the queue.
 
 ## Walk through the demo
 
 1. Open <http://localhost:3000/table/7>.
-2. Open <http://localhost:3000/pos> in another tab.
-3. Submit a request and confirm that it appears in the staff queue.
-4. Enter a staff name and claim the request.
+2. Open <http://localhost:3000/pos/login> and sign in with a staff name and PIN.
+3. Submit a request and confirm that it appears in the restaurant's staff queue.
+4. Claim the request with the signed-in staff identity.
 5. Move it through Seen, In Progress, and Done.
 6. Restart the application and confirm that the request and history remain.
 
@@ -77,6 +86,9 @@ DISCORD_WEBHOOK_URL=
 RESTAURANT_TIME_ZONE=America/New_York
 MOCK_POS_ENABLED=true
 TABLETAP_DB_PATH=.data/tabletap.db
+TABLETAP_AUTH_SECRET=replace-with-at-least-32-random-characters
+TABLETAP_STAFF_PIN=2468
+TABLETAP_RESTAURANT_ID=demo-restaurant
 
 POS_WEBHOOK_URL=
 POS_WEBHOOK_SECRET=
@@ -108,7 +120,7 @@ npm run build -- --webpack
 
 ## Current limitations
 
-- Staff pages and queue APIs do not yet require authenticated employee access.
+- The shared PIN is suitable for a controlled demonstration, but production use needs individual identities and managed access.
 - Local SQLite storage is not shared across serverless application instances.
 - There is no queue-coverage state, intake pause, or escalation policy.
 - Table IDs are URL-based and are not mapped to Toast table GUIDs.
@@ -117,8 +129,8 @@ npm run build -- --webpack
 
 ## Next steps
 
-1. Add staff authentication and venue-scoped permissions.
-2. Run a structured employee walkthrough and record usability findings.
+1. Run a structured employee walkthrough and record usability findings.
+2. Replace the shared PIN with managed individual staff identities.
 3. Move the repository to a managed database before shared deployment.
 4. Add queue capacity controls and a documented fallback process.
 5. Confirm the restaurant's supported POS integration path.
