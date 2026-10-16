@@ -1,97 +1,71 @@
-# TableTap GM Pitch
+# TableTap Stakeholder Walkthrough Brief
 
-## Short Version
+## Purpose
 
-TableTap lets guests scan a QR code at their table and send simple service
-requests to staff. It is meant to reduce missed small requests and make table
-service smoother during busy shifts.
+TableTap is a working restaurant service-workflow prototype. Guests open a
+table-specific QR page and submit a routine request. Authenticated staff see the
+request in a restaurant-scoped queue, claim responsibility, update its status,
+and retain a persistent event history.
 
-## 30-Second Pitch
+The next decision is whether the workflow is clear enough for a limited pilot.
+That decision should follow an employee walkthrough, not a live guest test.
 
-"I built a working demo called TableTap. Guests scan a table QR code, tap what
-they need, and staff get a table-numbered alert immediately. It does not touch
-payments, customer accounts, or the POS for the first pilot. I would like to
-test it on a few tables for one shift and see whether it helps or gets in the
-way."
+## Thirty-Second Overview
 
-## Problem It Solves
+"I built TableTap to explore a common service gap: guests sometimes need a
+routine item while staff are occupied elsewhere. The prototype gives guests an
+optional request channel and gives staff one shared queue with visible ownership.
+I would like a server and shift leader to walk through the workflow, identify
+where it adds work or ambiguity, and decide whether a small pilot is warranted."
 
-- Guests wait to flag down staff for small requests.
-- Servers get interrupted while carrying food, taking orders, or closing checks.
-- Small requests can be forgotten during a rush.
-- Managers have little visibility into repeated service bottlenecks.
+## Demonstrated Today
 
-## What Guests See
+- Table-specific guest pages with quick requests and optional notes
+- Server-side validation and duplicate-submission protection
+- Authenticated staff access with eight-hour signed sessions
+- Restaurant-scoped active and completed queues
+- Claim, reassignment, status, completion, and reopening controls
+- SQLite persistence and request event history
+- Stale-update protection for competing dashboard actions
+- Optional Discord, generic POS, and Toast-bridge delivery adapters
+- Ten passing automated tests
 
-- Restaurant logo placeholder
-- Table number
-- Large request buttons
-- Optional custom note
-- Confirmation after sending
+## Evidence and Boundaries
 
-## What Staff Sees Today
+The concept is informed by firsthand restaurant-service experience and separate
+interviews with two California Dreaming servers conducted July 27, 2026. Those
+interviews shaped the workflow, but they do not establish restaurant approval or
+measured service improvement.
 
-- Mock POS dashboard
-- Optional Discord alert or shared-device notification
-- Table number
-- Request type
-- Optional note
-- Timestamp
+The prototype does not process payments, create Toast orders, or contain a
+verified Toast integration. The shared demonstration PIN and local SQLite
+database are appropriate for a controlled walkthrough, not production use.
 
-## Why It Is Safe To Pilot
+## Walkthrough Agenda
 
-- No payments
-- No customer personal data
-- No POS access required
-- No app download
-- Can be tested on a few tables
-- Can be turned off by removing the QR codes
+1. Submit and claim a routine request.
+2. Reassign it when the first owner becomes unavailable.
+3. Decide how to handle a duplicate request.
+4. Explain what happens when nobody can monitor the queue.
+5. Mark the request complete and define how physical delivery is confirmed.
 
-## Suggested Pilot
+Use [the employee walkthrough guide](EMPLOYEE_WALKTHROUGH.md) to record task
+completion, confusion, workarounds, missing controls, and requested changes.
 
-Run TableTap on 5-10 tables for one shift.
+## Stakeholder Questions
 
-Track:
+- Who owns an unassigned request during a busy shift?
+- How should the table's server learn that another employee responded?
+- Which request types belong in the queue, and which should remain verbal?
+- What should guests see when the queue is not being monitored?
+- Does the workflow reduce missed needs or create another screen to watch?
+- What must change before a limited live pilot could be considered?
 
-- How many requests are submitted
-- Which request types are used most
-- Whether alerts are useful or distracting
-- Whether guests understand the QR code
-- Which request categories should change
+## Decision
 
-## Good GM Questions
+Choose one outcome after the walkthrough:
 
-- Which tables would be safest for a small test?
-- Who should receive the alerts?
-- Which request categories should be allowed?
-- Which requests should be excluded?
-- What would make this useful enough to keep?
-- If the pilot works, who would approve a larger rollout?
-
-## Future Version
-
-After the pilot, TableTap can grow into:
-
-- Staff dashboard with New, Seen, and Done states
-- Toast-style POS demo screen
-- Request analytics by table, shift, and category
-- Role-based routing for servers, bussers, bar, kitchen, and managers
-- Restaurant branding and configurable categories
-- QR code generation for every table
-- Toast/POS bridge integration where appropriate
-- Separate active and completed request queues
-
-## Demo Script
-
-1. Open the public TableTap URL.
-2. Visit `/table/7`.
-3. Tap "Refill" and submit.
-4. Show the request appear in `/pos`.
-5. Explain that every table gets its own QR code URL.
-6. Open `/pitch` for the manager-facing overview.
-7. Ask for a small one-shift pilot.
-
-## Ask
-
-"Can we test this on a small section for one shift and review whether it helped
-or got in the way?"
+- **Revise and repeat** when staff cannot complete or explain the workflow.
+- **Prepare a limited pilot proposal** when ownership and fallback behavior are
+  clear and no critical issue remains.
+- **Stop** when the coordination effort outweighs the service problem.

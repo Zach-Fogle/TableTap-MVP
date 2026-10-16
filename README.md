@@ -1,14 +1,14 @@
-# TableTap Restaurant Service Request MVP
+# TableTap Restaurant Service Workflow
 
 TableTap is a mobile-first restaurant service-request prototype. Guests open a
 table-specific page through a QR code, submit a routine request, and staff claim
 and track it in a mock POS queue. The concept and operating requirements draw on
 firsthand restaurant-service experience and two server interviews.
 
-**Status:** Working local MVP with SQLite persistence, named request ownership,
-event history, PIN-protected staff sessions, restaurant-scoped queues, and
-optional webhook delivery. It is not a production restaurant system or a
-verified Toast integration.
+**Status:** Completed portfolio prototype with SQLite persistence, named request
+ownership, event history, PIN-protected staff sessions, restaurant-scoped queues,
+and optional webhook delivery. The project demonstrates a proposed workflow; it
+is not a production restaurant system or a verified Toast integration.
 
 ![Authenticated staff queue with named request ownership](docs/screenshots/staff-dashboard-authenticated.png)
 
@@ -33,7 +33,7 @@ responsibility.
 - SQLite persistence for requests, assignments, completion times, and event history
 - Version checks that reject updates from stale queue snapshots
 - Optional Discord, generic POS, and Toast-bridge delivery adapters
-- Nine automated tests covering request delivery and persistent workflow behavior
+- Ten automated tests covering request delivery, persistence, ownership, stale updates, and restaurant isolation
 
 ## Architecture
 
@@ -44,7 +44,8 @@ flowchart LR
   Guest[Table-specific guest page] --> API[POST /api/request]
   API --> Validation[Server-side validation]
   Validation --> Store[SQLite request and event store]
-  Store --> Staff[Staff dashboard]
+  Login[Signed staff session] --> Staff[Restaurant-scoped staff queue]
+  Store --> Staff
   Validation --> Hooks[Optional webhook adapters]
 ```
 
@@ -52,6 +53,7 @@ flowchart LR
 - `app/api/request/route.ts`: request validation and delivery
 - `components/request-panel.tsx`: guest workflow
 - `lib/mock-pos-store.ts`: SQLite request and event repository
+- `lib/staff-auth.ts`: signed staff sessions and restaurant scope
 - `app/pos/` and `components/pos-dashboard.tsx`: staff queue and table views
 - `lib/integrations/`: mock POS, Discord, and optional bridge adapters
 
@@ -118,7 +120,7 @@ npm test
 npm run build -- --webpack
 ```
 
-## Current limitations
+## Project boundaries
 
 - The shared PIN is suitable for a controlled demonstration, but production use needs individual identities and managed access.
 - Local SQLite storage is not shared across serverless application instances.
@@ -127,7 +129,7 @@ npm run build -- --webpack
 - No payments or direct Toast order creation are implemented.
 - Service-time and staff-effort improvements have not been measured in a live pilot.
 
-## Next steps
+## Recommended next steps
 
 1. Run a structured employee walkthrough and record usability findings.
 2. Replace the shared PIN with managed individual staff identities.
@@ -135,5 +137,6 @@ npm run build -- --webpack
 4. Add queue capacity controls and a documented fallback process.
 5. Confirm the restaurant's supported POS integration path.
 
-The [manager pitch and pilot plan](docs/GM_PITCH.md) describes the proposed
-evaluation. It does not represent a completed restaurant pilot.
+The [stakeholder walkthrough brief](docs/GM_PITCH.md) and
+[employee walkthrough guide](docs/EMPLOYEE_WALKTHROUGH.md) describe how to
+evaluate the workflow before considering a live pilot.
