@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   PosRequest,
@@ -52,18 +53,25 @@ function formatRequestTime(value: string) {
   }).format(new Date(value));
 }
 
-export default function PosDashboard() {
+export default function PosDashboard({ staffName }: { staffName: string }) {
+  const router = useRouter();
   const [snapshot, setSnapshot] = useState<PosSnapshot>({
     requests: [],
     tables: [],
   });
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState<QueueTab>("active");
+  const [message, setMessage] = useState("");
 
   const loadSnapshot = useCallback(async () => {
     const response = await fetch("/api/mock-pos/requests", {
       cache: "no-store",
     });
+
+    if (response.status === 401) {
+      router.replace("/pos/login");
+      return;
+    }
 
     if (!response.ok) {
       return;
@@ -71,14 +79,28 @@ export default function PosDashboard() {
 
     setSnapshot((await response.json()) as PosSnapshot);
     setIsLoading(false);
-  }, []);
+  }, [router]);
 
-  const updateStatus = async (requestId: string, status: PosRequestStatus) => {
-    await fetch(`/api/mock-pos/requests/${requestId}`, {
+  const updateRequest = async (
+    request: PosRequest,
+    payload: { status?: PosRequestStatus; assignee?: string },
+  ) => {
+    const response = await fetch(`/api/mock-pos/requests/${request.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({
+        ...payload,
+        actor: staffName.trim(),
+        expectedVersion: request.version,
+      }),
     });
+
+    if (!response.ok) {
+      const result = (await response.json()) as { error?: string };
+      setMessage(result.error || "The request could not be updated.");
+    } else {
+      setMessage("");
+    }
     await loadSnapshot();
   };
 
@@ -113,7 +135,10 @@ export default function PosDashboard() {
             </span>
             TableTap POS Demo
           </Link>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <span className="flex items-center rounded-full bg-white px-4 py-2 text-sm font-bold text-sage-700 shadow-sm ring-1 ring-black/5 dark:bg-white/10 dark:text-sage-100 dark:ring-white/10">
+              Signed in: {staffName}
+            </span>
             <Link
               href="/table/7"
               className="rounded-full bg-white px-4 py-2 text-sm font-bold text-sage-700 shadow-sm ring-1 ring-black/5 dark:bg-white/10 dark:text-sage-100 dark:ring-white/10"
@@ -126,8 +151,27 @@ export default function PosDashboard() {
             >
               Pitch
             </Link>
+            <button
+              type="button"
+              onClick={async () => {
+                await fetch("/api/auth/logout", { method: "POST" });
+                router.replace("/pos/login");
+              }}
+              className="rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-600 shadow-sm ring-1 ring-black/5 dark:bg-white/10 dark:text-slate-200 dark:ring-white/10"
+            >
+              Sign out
+            </button>
           </div>
         </nav>
+
+        {message && (
+          <p
+            className="mb-4 rounded-xl bg-red-100 px-4 py-3 text-sm font-bold text-red-700"
+            role="alert"
+          >
+            {message}
+          </p>
+        )}
 
         <section className="grid gap-4 md:grid-cols-3">
           <div className="rounded-[1.5rem] bg-ink p-6 text-white shadow-card">
@@ -275,6 +319,11 @@ export default function PosDashboard() {
                             {request.customMessage}
                           </p>
                         )}
+                        <p className="mt-2 text-sm font-bold text-sage-700 dark:text-sage-100">
+                          {request.assignedTo
+                            ? `Owner: ${request.assignedTo}`
+                            : "Unassigned"}
+                        </p>
                       </div>
                       <span
                         className={`w-fit rounded-full px-3 py-1 text-xs font-black ${statusStyles[request.status]}`}
@@ -283,10 +332,24 @@ export default function PosDashboard() {
                       </span>
                     </div>
                     {selectedTab === "active" ? (
-                      <div className="mt-4 grid grid-cols-3 gap-2">
+                      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                         <button
                           type="button"
-                          onClick={() => updateStatus(request.id, "seen")}
+                          disabled={!staffName.trim()}
+                          onClick={() =>
+                            updateRequest(request, {
+                              assignee: staffName.trim(),
+                            })
+                          }
+                          className="min-h-10 rounded-xl bg-ink px-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          {request.assignedTo ? "Reassign to me" : "Claim"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateRequest(request, { status: "seen" })
+                          }
                           className="min-h-10 rounded-xl bg-amber-100 px-3 text-sm font-bold text-amber-800"
                         >
                           Seen
@@ -294,7 +357,7 @@ export default function PosDashboard() {
                         <button
                           type="button"
                           onClick={() =>
-                            updateStatus(request.id, "in_progress")
+                            updateRequest(request, { status: "in_progress" })
                           }
                           className="min-h-10 rounded-xl bg-blue-100 px-3 text-sm font-bold text-blue-800"
                         >
@@ -302,7 +365,9 @@ export default function PosDashboard() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => updateStatus(request.id, "done")}
+                          onClick={() =>
+                            updateRequest(request, { status: "done" })
+                          }
                           className="min-h-10 rounded-xl bg-sage-600 px-3 text-sm font-bold text-white"
                         >
                           Done
@@ -313,7 +378,9 @@ export default function PosDashboard() {
                         Completed and removed from the active queue
                         <button
                           type="button"
-                          onClick={() => updateStatus(request.id, "new")}
+                          onClick={() =>
+                            updateRequest(request, { status: "new" })
+                          }
                           className="rounded-lg bg-white px-3 py-2 text-xs font-black text-sage-700 shadow-sm dark:bg-white/10 dark:text-white"
                         >
                           Reopen

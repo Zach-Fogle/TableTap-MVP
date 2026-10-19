@@ -6,7 +6,7 @@ export const metadata: Metadata = {
     default: "TableTap",
     template: "%s | TableTap",
   },
-  description: "Request restaurant service right from your table.",
+  description: "A QR service-request workflow with an authenticated staff queue.",
   applicationName: "TableTap",
 };
 
@@ -26,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body>{children}</body>
     </html>
   );

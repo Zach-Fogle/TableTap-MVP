@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import PosTableDetail from "@/components/pos-table-detail";
+import { getCurrentStaffSession } from "@/lib/staff-auth";
 
 type PosTablePageProps = {
   params: Promise<{ tableId: string }>;
@@ -22,6 +23,8 @@ export async function generateMetadata({
 }
 
 export default async function PosTablePage({ params }: PosTablePageProps) {
+  const session = await getCurrentStaffSession();
+  if (!session) redirect("/pos/login");
   const { tableId } = await params;
 
   if (!isValidTableId(tableId)) {

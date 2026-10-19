@@ -8,7 +8,7 @@ export default function Home() {
           TT
         </div>
         <p className="mb-2 text-xs font-bold uppercase tracking-[0.24em] text-sage-600 dark:text-sage-100">
-          Welcome to
+          Portfolio prototype
         </p>
         <h1 className="text-4xl font-bold tracking-tight text-ink dark:text-white">
           TableTap
@@ -21,19 +21,19 @@ export default function Home() {
             href="/table/7"
             className="inline-flex min-h-12 items-center justify-center rounded-xl bg-sage-600 px-6 font-bold text-white transition hover:bg-sage-700 focus:outline-none focus:ring-4 focus:ring-sage-500/25"
           >
-            View demo table
+            Open guest workflow
           </Link>
           <Link
             href="/pitch"
             className="inline-flex min-h-12 items-center justify-center rounded-xl px-6 font-bold text-sage-700 transition hover:bg-sage-50 focus:outline-none focus:ring-4 focus:ring-sage-500/20 dark:text-sage-100 dark:hover:bg-white/5"
           >
-            Manager pitch
+            View project overview
           </Link>
           <Link
             href="/pos"
             className="inline-flex min-h-12 items-center justify-center rounded-xl px-6 font-bold text-slate-600 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-500/10 dark:text-slate-200 dark:hover:bg-white/5"
           >
-            Mock POS dashboard
+            Open staff queue
           </Link>
         </div>
       </section>

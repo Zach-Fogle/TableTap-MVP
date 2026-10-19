@@ -6,20 +6,20 @@ const benefits = [
     body: "Guests can ask for napkins, refills, plates, sauce, or the check without waiting to catch eye contact during a rush.",
   },
   {
-    title: "Cleaner staff routing",
-    body: "Requests land in one shared channel now, with a POS or staff-dashboard path ready as the restaurant grows into it.",
+    title: "Clear request ownership",
+    body: "Authenticated staff can claim, reassign, and complete table-numbered requests in one restaurant-scoped queue.",
   },
   {
-    title: "Low-risk pilot",
-    body: "No payments, no customer accounts, no POS dependency for the first test. Start with a few tables and measure whether it helps.",
+    title: "Bounded evaluation",
+    body: "The next step is a staff walkthrough focused on ownership, queue coverage, duplicates, and operational fit before any live pilot.",
   },
 ];
 
-const pilotSteps = [
-  "Place QR codes on 5-10 tables for one shift.",
-  "Send requests to a manager/server Discord channel or tablet.",
-  "Track how many requests arrive and whether they reduce guest flag-downs.",
-  "Ask staff what categories should be added, removed, or routed differently.",
+const walkthroughSteps = [
+  "Have a server submit, claim, and complete one routine request.",
+  "Test reassignment and ask how the table's server stays informed.",
+  "Introduce a duplicate request and a period with no queue coverage.",
+  "Record confusion, missing controls, and staff effort before deciding on a pilot.",
 ];
 
 const demoRequests = [
@@ -32,7 +32,7 @@ export default function PitchPage() {
   return (
     <main className="min-h-screen px-5 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
-        <nav className="mb-8 flex items-center justify-between">
+        <nav className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <Link
             href="/"
             className="flex items-center gap-3 font-bold text-ink dark:text-white"
@@ -42,24 +42,26 @@ export default function PitchPage() {
             </span>
             TableTap
           </Link>
-          <Link
-            href="/table/7"
-            className="rounded-full bg-white/80 px-4 py-2 text-sm font-bold text-sage-700 shadow-sm ring-1 ring-sage-600/10 transition hover:bg-white dark:bg-white/10 dark:text-sage-100 dark:ring-white/10"
-          >
-            Try table demo
-          </Link>
-          <Link
-            href="/pos"
-            className="rounded-full bg-white/80 px-4 py-2 text-sm font-bold text-sage-700 shadow-sm ring-1 ring-sage-600/10 transition hover:bg-white dark:bg-white/10 dark:text-sage-100 dark:ring-white/10"
-          >
-            POS demo
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/table/7"
+              className="rounded-full bg-white/80 px-4 py-2 text-sm font-bold text-sage-700 shadow-sm ring-1 ring-sage-600/10 transition hover:bg-white dark:bg-white/10 dark:text-sage-100 dark:ring-white/10"
+            >
+              Guest workflow
+            </Link>
+            <Link
+              href="/pos"
+              className="rounded-full bg-white/80 px-4 py-2 text-sm font-bold text-sage-700 shadow-sm ring-1 ring-sage-600/10 transition hover:bg-white dark:bg-white/10 dark:text-sage-100 dark:ring-white/10"
+            >
+              Staff queue
+            </Link>
+          </div>
         </nav>
 
         <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div className="rounded-[2rem] border border-white/70 bg-white/90 p-7 shadow-card backdrop-blur dark:border-white/10 dark:bg-sage-900/90 sm:p-10">
             <p className="text-sm font-bold uppercase tracking-[0.24em] text-sage-600 dark:text-sage-100">
-              Restaurant service pilot
+              Restaurant service workflow
             </p>
             <h1 className="mt-4 max-w-3xl text-4xl font-black tracking-tight text-ink dark:text-white sm:text-6xl">
               A QR request button for every table.
@@ -142,25 +144,25 @@ export default function PitchPage() {
         </section>
 
         <section
-          id="pilot"
+          id="walkthrough"
           className="mt-6 rounded-[2rem] border border-white/70 bg-white/90 p-7 shadow-card dark:border-white/10 dark:bg-sage-900/90 sm:p-10"
         >
           <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr]">
             <div>
               <p className="text-sm font-bold uppercase tracking-[0.24em] text-sage-600 dark:text-sage-100">
-                Suggested next step
+                Recommended next step
               </p>
               <h2 className="mt-3 text-3xl font-black tracking-tight text-ink dark:text-white">
-                Run a one-shift pilot.
+                Run an employee walkthrough.
               </h2>
               <p className="mt-4 leading-7 text-slate-600 dark:text-slate-300">
-                The point is not to replace servers. The point is to remove
-                tiny service bottlenecks and see if guests and staff like the
-                flow.
+                Test whether staff understand ownership, coverage, duplicate
+                handling, and completion before introducing the workflow to
+                live guests.
               </p>
             </div>
             <ol className="space-y-3">
-              {pilotSteps.map((step, index) => (
+              {walkthroughSteps.map((step, index) => (
                 <li
                   key={step}
                   className="flex gap-4 rounded-2xl bg-sage-50 p-4 text-slate-700 dark:bg-white/5 dark:text-slate-200"

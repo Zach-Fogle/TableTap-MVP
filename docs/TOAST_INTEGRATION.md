@@ -69,15 +69,16 @@ MOCK_POS_ENABLED=true
 
 Use this flow for demos:
 
-1. Open `/pos` on a laptop or tablet.
+1. Open `/pos/login` on a laptop or tablet and sign in with the configured demo PIN.
 2. Open `/table/7` on a phone.
 3. Send a request.
 4. Mark the request Seen, Working, or Done in the POS dashboard.
 5. Confirm Done requests move out of the active queue into the Completed tab.
 
-The mock POS uses temporary in-memory server state. It proves the workflow, but
-it is not a substitute for a real Toast API integration or database-backed staff
-dashboard.
+The mock POS uses local SQLite storage, signed staff sessions, restaurant-scoped
+queues, named ownership, event history, and stale-update protection. It proves
+the proposed workflow, but it is not a substitute for managed staff identity, a
+shared production database, or a real Toast API integration.
 
 ## Environment Variables
 
